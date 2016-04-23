@@ -2,6 +2,7 @@ package filter
 
 import (
 //    "fmt"
+    "regexp"
     "sort"
     "github.com/yanyiwu/gojieba"
 )
@@ -18,6 +19,12 @@ func NewFilter() Filter {
 }
 
 func (f *Filter) train_word(word string, is_spam bool) {
+    reg := regexp.MustCompile(`[^\p{Han}]`)
+    if reg.Find([]byte(word)) != nil {
+        return
+    }
+//    fmt.Println(word)
+
     a, ok := f.word_map[word]
     if !ok {
         a = new(account);
@@ -55,7 +62,6 @@ func (f *Filter) Classify(msg string) bool {
     sort.Sort(sort.Reverse(s))
     var spam_r, healthy_r float64 = 1.0, 1.0
     for idx, word := range words {
-//        fmt.Println(word)
         if idx == 15 {
             break
         }

@@ -45,7 +45,7 @@ func main() {
     var right_judge, wrong_judge uint = 0, 0
     var filter = filter.NewFilter()
     for idx := 0; idx < 10; idx++ {
-        train(&filter, "data/normal/", false, &right_judge, &wrong_judge)
         train(&filter, "data/spam/", true, &right_judge, &wrong_judge)
+        train(&filter, "data/normal/", false, &right_judge, &wrong_judge)
     }
 }
