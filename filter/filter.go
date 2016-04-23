@@ -1,7 +1,7 @@
 package filter
 
 import (
-//    "fmt"
+    "fmt"
     "regexp"
     "sort"
     "github.com/yanyiwu/gojieba"
@@ -12,15 +12,15 @@ type Filter struct {
     spam_sum uint
     healthy_sum uint
     jieba *gojieba.Jieba
+    regex *regexp.Regexp
 }
 
 func NewFilter() Filter {
-    return Filter{make(map[string]*account), 0, 0, gojieba.NewJieba()}
+    return Filter{make(map[string]*account), 0, 0, gojieba.NewJieba(), regexp.MustCompile(`[^\p{Han}]`)}
 }
 
 func (f *Filter) train_word(word string, is_spam bool) {
-    reg := regexp.MustCompile(`[^\p{Han}]`)
-    if reg.Find([]byte(word)) != nil {
+    if f.regex.Find([]byte(word)) != nil {
         return
     }
 //    fmt.Println(word)
@@ -32,10 +32,8 @@ func (f *Filter) train_word(word string, is_spam bool) {
         f.word_map[word] = a
     }
     if is_spam {
-        f.spam_sum++
         a.IncSpam()
     } else {
-        f.healthy_sum++
         a.IncHealthy()
     }
 }
@@ -45,34 +43,64 @@ func (f *Filter) classify_word(word string) float64 {
     if !ok {
         return 0.4      //该词第一次粗线, Paul Graham就假定属于垃圾邮件的概率为0.4
     } else {
+        fmt.Println(word)
         return a.SpamRatio()
     }
 }
 
 func (f *Filter) Train(msg string, is_spam bool) {
     words := f.jieba.CutAll(msg)
-    for _, word := range words {
-        f.train_word(word, is_spam)
+    s := sortor{words, func(l, r string) bool {
+        return l < r
+    }}
+    sort.Sort(s)
+    for idx, word := range words {
+        if idx == 0 || words[idx-1] != word {
+            f.train_word(word, is_spam)
+        }
+    }
+    if is_spam {
+        f.spam_sum++
+        fmt.Println("spam sum", f.spam_sum)
+    } else {
+        f.healthy_sum++
+        fmt.Println("healthy sum", f.healthy_sum) 
     }
 }
 
 func (f *Filter) Classify(msg string) bool {
     words := f.jieba.CutAll(msg)
-    s := sortor{f, words}
+    s := sortor{words, func(l, r string) bool {
+        return f.classify_word(l) < f.classify_word(r)
+    }}
     sort.Sort(sort.Reverse(s))
     var spam_r, healthy_r float64 = 1.0, 1.0
+    word_count := 0
     for idx, word := range words {
-        if idx == 15 {
-            break
+//        if word_count == 30 {
+//            break
+//        }
+        if idx != 0 && word == words[idx-1] {
+            continue
+        }
+        if f.regex.Find([]byte(word)) != nil {
+            continue
         }
         rat := f.classify_word(word)
+        fmt.Println(word, rat)
         spam_r *= rat
         healthy_r *= (1 - rat)
+        word_count++
     }
 
     if spam_r + healthy_r == 0 {
         return false
     }
+/*
+    fmt.Println(spam_r)
+    fmt.Println(spam_r + healthy_r)
+    fmt.Println(spam_r / (spam_r + healthy_r))
+*/
     return spam_r / (spam_r + healthy_r) > 0.9
 }
 
