@@ -1,7 +1,6 @@
 package filter
 
 import (
-    "fmt"
     "regexp"
     "sort"
     "github.com/yanyiwu/gojieba"
@@ -23,7 +22,6 @@ func (f *Filter) train_word(word string, is_spam bool) {
     if f.regex.Find([]byte(word)) != nil {
         return
     }
-//    fmt.Println(word)
 
     a, ok := f.word_map[word]
     if !ok {
@@ -43,7 +41,6 @@ func (f *Filter) classify_word(word string) float64 {
     if !ok {
         return 0.4      //该词第一次粗线, Paul Graham就假定属于垃圾邮件的概率为0.4
     } else {
-        fmt.Println(word)
         return a.SpamRatio()
     }
 }
@@ -61,10 +58,8 @@ func (f *Filter) Train(msg string, is_spam bool) {
     }
     if is_spam {
         f.spam_sum++
-        fmt.Println("spam sum", f.spam_sum)
     } else {
         f.healthy_sum++
-        fmt.Println("healthy sum", f.healthy_sum) 
     }
 }
 
@@ -75,11 +70,7 @@ func (f *Filter) Classify(msg string) bool {
     }}
     sort.Sort(sort.Reverse(s))
     var spam_r, healthy_r float64 = 1.0, 1.0
-    word_count := 0
     for idx, word := range words {
-//        if word_count == 30 {
-//            break
-//        }
         if idx != 0 && word == words[idx-1] {
             continue
         }
@@ -87,20 +78,14 @@ func (f *Filter) Classify(msg string) bool {
             continue
         }
         rat := f.classify_word(word)
-        fmt.Println(word, rat)
         spam_r *= rat
         healthy_r *= (1 - rat)
-        word_count++
     }
 
     if spam_r + healthy_r == 0 {
         return false
     }
-/*
-    fmt.Println(spam_r)
-    fmt.Println(spam_r + healthy_r)
-    fmt.Println(spam_r / (spam_r + healthy_r))
-*/
+
     return spam_r / (spam_r + healthy_r) > 0.9
 }
 

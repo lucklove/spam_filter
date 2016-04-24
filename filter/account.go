@@ -1,7 +1,5 @@
 package filter
 
-import "fmt"
-
 type account struct {
     spam uint
     healthy uint
@@ -35,17 +33,6 @@ func (a *account) SpamRatio() float64 {
     } else if w_h == 0 {
         w_h = w_s * 0.05
     }
-    if(!(w_h < 1 && w_s < 1)) {
-        fmt.Println("w_h", w_h)
-        fmt.Println("w_s", w_s)
-        fmt.Println("spam", a.spam)
-        fmt.Println("spam sum", *a.spam_sum)
-        fmt.Println("healthy", a.healthy)
-        fmt.Println("healthy sum", *a.healthy_sum)
-        panic("wo qu")
-    }
-    fmt.Println("w_s:", w_s)
-    fmt.Println("w_h:", w_h)
 
     return (w_s * s) / (w_s * s + w_h * h)
 }
