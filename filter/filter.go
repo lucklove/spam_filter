@@ -1,7 +1,6 @@
 package filter
 
 import (
-    "regexp"
     "sort"
     "github.com/yanyiwu/gojieba"
 )
@@ -11,18 +10,13 @@ type Filter struct {
     spam_sum uint
     healthy_sum uint
     jieba *gojieba.Jieba
-    regex *regexp.Regexp
 }
 
 func NewFilter() Filter {
-    return Filter{make(map[string]*account), 0, 0, gojieba.NewJieba(), regexp.MustCompile(`[^\p{Han}]`)}
+    return Filter{make(map[string]*account), 0, 0, gojieba.NewJieba()}
 }
 
 func (f *Filter) train_word(word string, is_spam bool) {
-    if f.regex.Find([]byte(word)) != nil {
-        return
-    }
-
     a, ok := f.word_map[word]
     if !ok {
         a = new(account);
@@ -72,9 +66,6 @@ func (f *Filter) Classify(msg string) bool {
     var spam_r, healthy_r float64 = 1.0, 1.0
     for idx, word := range words {
         if idx != 0 && word == words[idx-1] {
-            continue
-        }
-        if f.regex.Find([]byte(word)) != nil {
             continue
         }
         rat := f.classify_word(word)
